@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Sport {
+  FOOTBALL
+  PADEL
+  TENNIS
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+  COMPLETED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(CLIENT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+}
+
+model Complex {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courts    Court[]
+}
+
+model Court {
+  id                  String    @id @default(cuid())
+  name                String
+  sport               Sport
+  slotDurationMinutes Int       @default(60)
+  description         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  complexId           String
+  complex             Complex   @relation(fields: [complexId], references: [id])
+  slots               Slot[]
+  bookings            Booking[]
+}
+
+model Slot {
+  id        String    @id @default(cuid())
+  dayOfWeek DayOfWeek
+  startTime String
+  endTime   String
+  courtId   String
+  court     Court     @relation(fields: [courtId], references: [id])
+
+  @@unique([courtId, dayOfWeek, startTime])
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  date        String
+  startTime   String
+  endTime     String
+  status      BookingStatus @default(CONFIRMED)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  cancelledAt DateTime?
+  cancelledBy String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  courtId     String
+  court       Court         @relation(fields: [courtId], references: [id])
+
+  @@unique([courtId, date, startTime])
+}
